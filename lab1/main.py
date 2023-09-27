@@ -76,10 +76,39 @@ class Alphabet:
 
 
 class Crypter:
-    SPECIAL_SYMBOLS = set("\ ,.!?«»\n-_")
+    @classmethod
+    def _preprocess(raw_text: str) -> tuple[str, typing.Iterable[bool]]:
+        is_upper_cases = np.array(
+            [letter.isupper() for letter in raw_text], dtype="bool"
+        )
+        preprocessed_text = raw_text.lower()
+
+        return preprocessed_text, is_upper_cases
+
+    @classmethod
+    def _postprocess(processed_text: str, is_upper_cases: typing.Iterable[bool]) -> str:
+        postprocessed_text = deque()
+        for letter, is_upper in zip(processed_text, is_upper_cases):
+            postprocessed_text.append(letter.upper() if is_upper else letter)
+
+        return "".join(postprocessed_text)
 
     @staticmethod
-    def encrypt(alphabet: Alphabet, text: str, key: str):
+    def encrypt(alphabet: Alphabet, text: str, key: str) -> str:
+        preprocessed_text, is_upper_cases = Crypter._preprocess(text)
+        processed_text = Crypter._encrypt(alphabet, preprocessed_text, key)
+        postprocessed_text = Crypter._postprocess(processed_text, is_upper_cases)
+        return postprocessed_text
+
+    @staticmethod
+    def decrypt(alphabet: Alphabet, text: str, key: str) -> str:
+        preprocessed_text, is_upper_cases = Crypter._preprocess(text)
+        processed_text = Crypter._decrypt(alphabet, preprocessed_text, key)
+        postprocessed_text = Crypter._postprocess(processed_text, is_upper_cases)
+        return postprocessed_text
+
+    @staticmethod
+    def _encrypt(alphabet: Alphabet, text: str, key: str):
         enctypted_letters = []
         for index, character in enumerate(text):
             if character in alphabet.letters_set:
@@ -91,7 +120,7 @@ class Crypter:
         return "".join(enctypted_letters)
 
     @staticmethod
-    def decrypt(alphabet: Alphabet, encrypted_text: str, key: str):
+    def _decrypt(alphabet: Alphabet, encrypted_text: str, key: str):
         decrypted_letters = []
         for index, character in enumerate(encrypted_text):
             if character in alphabet.letters_set:
@@ -114,21 +143,6 @@ class FrequencyAnalizer:
         for key, value in frequencies.items():
             frequencies[key] = value / common_count
         return frequencies
-
-
-def preprocess(raw_text: str) -> tuple[str, typing.Iterable[bool]]:
-    is_upper_cases = np.array([letter.isupper() for letter in raw_text], dtype="bool")
-    preprocessed_text = raw_text.lower()
-
-    return preprocessed_text, is_upper_cases
-
-
-def postprocess(processed_text: str, is_upper_cases: typing.Iterable[bool]) -> str:
-    postprocessed_text = deque()
-    for letter, is_upper in zip(processed_text, is_upper_cases):
-        postprocessed_text.append(letter.upper() if is_upper else letter)
-
-    return "".join(postprocessed_text)
 
 
 class CryptMode(StrEnum):
@@ -197,22 +211,17 @@ def main(
 
     match crypt_mode:
         case CryptMode.ENCRYPT:
-            preprocessed_text, is_upper_cases = preprocess(text)
-            processed_text = Crypter.encrypt(alphabet, preprocessed_text, key)
-            postprocessed_text = postprocess(processed_text, is_upper_cases)
+            processed = Crypter.encrypt(alphabet, text, key)
         case CryptMode.DECRYPT:
-            preprocessed_text, is_upper_cases = preprocess(text)
-            processed_text = Crypter.decrypt(alphabet, preprocessed_text, key)
-            postprocessed_text = postprocess(processed_text, is_upper_cases)
-
+            processed = Crypter.decrypt(alphabet, text, key)
         case _:
             raise Exception("Wrong crypt-mode!")
 
     if output_file:
         with open(output_file, "w") as file:
-            file.write(postprocessed_text)
+            file.write(processed)
     else:
-        click.echo(postprocessed_text)
+        click.echo(processed)
     console = Console()
 
     if frequency_analyze:
