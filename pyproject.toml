@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "infosec"
+version = "0.1.0"
+description = "my labs on information security in ITMO"
+authors = [
+    "Крисанов Роман Валерьевич <284712@niuitmo.ru>"
+    ]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+click = "8.0.4"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.9.1"
+rich = "^13.5.3"
+pre-commit = "^3.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
